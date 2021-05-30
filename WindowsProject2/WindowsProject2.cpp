@@ -137,10 +137,11 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 
         hChatsList = CreateWindowEx(0, CHATLIST_CLASS_NAME, NULL, WS_CHILD | WS_VISIBLE | WS_VSCROLL, 0, 80, rc.right, rc.bottom - 80, hwnd, (HMENU)MAIN_CHATSLIST, 0, 0);
         hMessageSendButton = CreateWindowEx(0, L"button", L"Отправить", WS_CHILD, 0, 0, 0, 0, hwnd, (HMENU)MAIN_MESSAGESEND_BUTTON, 0, 0);
-        hMessageTextEdit = CreateWindowEx(0, L"edit", 0, WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd, (HMENU)MAIN_MESSAGE_EDIT, 0, 0);
+        hMessageTextEdit = CreateWindowEx(0, L"edit", 0, WS_CHILD | ES_AUTOVSCROLL | WS_VSCROLL | ES_MULTILINE, 0, 0, 0, 0, hwnd, (HMENU)MAIN_MESSAGE_EDIT, 0, 0);
         hBackButton = CreateWindowEx(0, L"button", L"Назад", WS_CHILD, 0, 0, 0, 0, hwnd, (HMENU)MAIN_BACK_BUTTON, 0, 0);
         hNewChatButton = CreateWindowEx(0, L"button", L"+", WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd, (HMENU)MAIN_ADD_CHAT_BUTTON, 0, 0);
-        
+
+        //SendDlgItemMessage(hwnd, MAIN_MESSAGE_EDIT, EM_SETLIMITTEXT, 4050, 0);
         chats.hList = &hChatsList;
 
 
@@ -262,8 +263,8 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         }
         else if (windowId == 2) {
             SetWindowPos(hChatsList, HWND_TOP, 0, 0, cxClient, cyClient - 130, SWP_NOZORDER | SWP_NOMOVE);
-            SetWindowPos(hMessageTextEdit, HWND_TOP, 25, cyClient - 37, cxClient-120-25-5, 25, SWP_NOZORDER);
-            SetWindowPos(hMessageSendButton, HWND_TOP, cxClient - 120, cyClient - 37, 100, 25, SWP_NOZORDER);
+            SetWindowPos(hMessageTextEdit, HWND_TOP, 5, cyClient - 50, cxClient-120-5-5, 50, SWP_NOZORDER);
+            SetWindowPos(hMessageSendButton, HWND_TOP, cxClient - 105, cyClient - 50, 100, 50, SWP_NOZORDER);
             SetWindowPos(hBackButton, HWND_TOP, cxClient-105, 15, 100, 35, SWP_NOZORDER);
         }
         return 0;
@@ -305,6 +306,7 @@ LRESULT CALLBACK MainWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         }
         EndPaint(hwnd, &ps);
         return 0;
+
     }
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
@@ -332,7 +334,8 @@ LRESULT CALLBACK ChatListWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
         SetScrollRange(hwnd, SB_VERT, 0, cItems * h, FALSE);
         SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
         return 0;
-        
+      
+
     case WM_REDRAW_CHATS:
         if (windowId == 1)
             chats.ReDrawChats(hwnd);
@@ -449,7 +452,15 @@ LRESULT CALLBACK ChatListWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
         SetScrollPos(hwnd, SB_VERT, iVscrollPos, TRUE);
         return 0;
     }
+    
 
+    case WM_CTLCOLORSTATIC:{
+        SelectObject((HDC)wParam, CreateFont(20, 0, 0, 0, 700, 0, 0, 0, 0, 0, 0, 0, 0, L"Arial"));
+        //Красим и задаем стиль инпутам
+        SetTextColor((HDC)wParam, RGB(255, 255, 255));
+        SetBkColor((HDC)wParam, BLUE_SOLID);
+        return (LRESULT)CreateSolidBrush(BLUE_SOLID);
+    }
 
     case WM_DESTROY:
         PostQuitMessage(0);
@@ -624,7 +635,25 @@ BOOL CALLBACK AddChatProc(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lPar
 LRESULT CALLBACK MessageProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg)
     {
-    
+    case WM_CREATE: {
+        Message* message = (Message*)((LPCREATESTRUCT)lParam)->lpCreateParams;
+        User* user = chats.GetNameByUserId(message->ownerId);
+        message->hwndEdit = CreateWindowEx(0, L"EDIT", message->text, WS_VISIBLE | WS_CHILD | WS_VSCROLL | ES_AUTOVSCROLL | ES_MULTILINE, 5, 5, 300, 70, hwnd, 0, gInst, 0);
+        wchar_t upLine[1024];
+        wsprintfW(upLine, L"%s %d/%d/%d %d:%d", user->fName, message->time.wDay, message->time.wMonth, message->time.wYear, message->time.wHour, message->time.wMinute);
+        message->hwndUpLine = CreateWindowEx(0, L"STATIC", upLine, WS_VISIBLE | WS_CHILD, 0, 0, 300, 20, hwnd, 0, gInst, 0);
+        return 0;
+    }
+
+
+    case WM_CTLCOLOREDIT:
+        SelectObject((HDC)wParam, CreateFont(16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, L"Arial"));
+        //Красим и задаем стиль инпутам
+        SetTextColor((HDC)wParam, RGB(255, 255, 255));
+        SetBkColor((HDC)wParam, BLUE_SOLID);
+        return (LRESULT)CreateSolidBrush(BLUE_SOLID);
+        
+
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -675,6 +704,7 @@ void DataHandler() {
                         myself.user_id = *(long long*)&data[32];
                         memcpy(myself.fName, &data[40], 32);
                         memcpy(myself.lName, &data[72], 32);
+                        chats.AddUser(&myself);
                         break;
                     }
                           //case 3: {//Добавляем чаты

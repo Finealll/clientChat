@@ -26,6 +26,8 @@ struct Message {			//—труктура описывает сообщение
 	bool isDeleted;
 
 	HWND hwnd;
+	HWND hwndEdit;
+	HWND hwndUpLine;
 	HMENU menuId;
 };
 
@@ -147,6 +149,13 @@ struct Chats {				//√лавна€ структура взаимодействи€ с чатами
 		for (int i = 0; i < chats.size(); i++) {
 			chats[i].hwnd = CreateWindowEx(0, L"static", chats[i].user->fName, WS_CHILD | WS_BORDER | SS_NOTIFY, 0, i*h, 300, h, hwnd, chats[i].menuId, 0, 0);
 			ShowWindow(chats[i].hwnd, SW_SHOW);
+		/*
+			TRACKMOUSEEVENT tme = { 0 };
+			tme.cbSize = sizeof(tme);
+			tme.dwFlags = TME_HOVER;
+			tme.hwndTrack = chats[i].hwnd;
+			tme.dwHoverTime = HOVER_DEFAULT;
+			::TrackMouseEvent(&tme);*/
 		}
 		RECT rc;
 		GetClientRect(GetParent(*hList), &rc);
@@ -177,8 +186,8 @@ struct Chats {				//√лавна€ структура взаимодействи€ с чатами
 		GetClientRect(GetParent(hwnd), &rc);
 		int counter = 0;
 		for (int i = currentChat->messageItems.size() - 1; i >= 0 ; i--) {
-			//currentChat->messageItems[i].hwnd = CreateWindowEx(0, L"FineallMessageWindowClass", currentChat->messageItems[i].text, WS_CHILD | WS_BORDER, 0, startPos + counter++ * h, 0, h, hwnd, currentChat->messageItems[i].menuId, 0, 0);
-			currentChat->messageItems[i].hwnd = CreateWindowEx(0, L"static", currentChat->messageItems[i].text, WS_CHILD | WS_BORDER, 0, startPos + counter++ * h, 0, h, hwnd, currentChat->messageItems[i].menuId, 0, 0);
+			currentChat->messageItems[i].hwnd = CreateWindowEx(0, L"FineallMessageWindowClass", NULL, WS_CHILD | WS_BORDER, 0, startPos + counter++ * h, 0, h, hwnd, currentChat->messageItems[i].menuId, 0, static_cast<LPVOID>(&currentChat->messageItems[i]));
+			//currentChat->messageItems[i].hwnd = CreateWindowEx(0, L"static", currentChat->messageItems[i].text, WS_CHILD | WS_BORDER, 0, startPos + counter++ * h, 0, h, hwnd, currentChat->messageItems[i].menuId, 0, 0);
 			ShowWindow(currentChat->messageItems[i].hwnd, SW_SHOW);
 		}
 
@@ -199,6 +208,8 @@ struct Chats {				//√лавна€ структура взаимодействи€ с чатами
 	int SizeWidthMessagesWindow(LPARAM lParam, int h = 70) {
 		for (int i = 0; i < currentChat->messageItems.size(); i++) {
 			SetWindowPos(currentChat->messageItems[i].hwnd, HWND_TOP, 0, 0, GET_X_LPARAM(lParam), h, SWP_NOZORDER | SWP_NOMOVE);
+			SetWindowPos(currentChat->messageItems[i].hwndUpLine, HWND_TOP, 5, 0, GET_X_LPARAM(lParam) - 10, 20, SWP_NOZORDER);
+			SetWindowPos(currentChat->messageItems[i].hwndEdit, HWND_TOP, 5, 20, GET_X_LPARAM(lParam) - 10, h - 20, SWP_NOZORDER);
 		}
 		return S_OK;
 	}
@@ -224,6 +235,16 @@ struct Chats {				//√лавна€ структура взаимодействи€ с чатами
 		return S_OK;
 	}
 
+
+
+	User* GetNameByUserId(long long ownerId) {
+		for (int i = 0; i < users.size(); i++) {
+			if (users[i]->user_id == ownerId) {
+				return users[i];
+			}
+		}
+		return new User();
+	}
 
 	
 };

@@ -20,7 +20,7 @@ bool Connect()                  //Подключение к серверу
     }
 
     int nSizeOfADDR = sizeof(addr);
-    addr.sin_addr.s_addr = inet_addr("192.168.0.103");
+    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr.sin_port = htons(3001);
     addr.sin_family = AF_INET;
 
